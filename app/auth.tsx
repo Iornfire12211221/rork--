@@ -75,7 +75,7 @@ declare global {
 export default function AuthScreen() {
   const { loginWithTelegram, currentUser } = useApp();
   const [isLoading, setIsLoading] = useState(true);
-  const [authStatus, setAuthStatus] = useState<'checking' | 'telegram' | 'fallback' | 'error'>('checking');
+  const [authStatus, setAuthStatus] = useState<'checking' | 'telegram' | 'not-telegram' | 'error'>('checking');
   const [telegramUser, setTelegramUser] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -123,15 +123,15 @@ export default function AuthScreen() {
             }
           } else {
             console.log('No Telegram user data available');
-            setAuthStatus('fallback');
+            setAuthStatus('not-telegram');
           }
         } else {
           console.log('Not running in Telegram WebApp');
-          setAuthStatus('fallback');
+          setAuthStatus('not-telegram');
         }
       } catch (error) {
         console.error('Telegram auth error:', error);
-        setAuthStatus('fallback');
+        setAuthStatus('not-telegram');
       } finally {
         setIsLoading(false);
       }
@@ -173,32 +173,7 @@ export default function AuthScreen() {
     }
   };
   
-  const handleFallbackAuth = () => {
-    // Для демо - автоматически логинимся как демо пользователь
-    Alert.alert(
-      'Демо режим',
-      'Приложение запущено вне Telegram. Войти как демо пользователь?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        { 
-          text: 'Войти', 
-          onPress: async () => {
-            setIsLoading(true);
-            const success = await loginWithTelegram({
-              telegramId: 12345,
-              firstName: 'Демо',
-              lastName: 'Пользователь',
-              username: 'demo_user',
-            });
-            if (success) {
-              router.replace('/');
-            }
-            setIsLoading(false);
-          }
-        }
-      ]
-    );
-  };
+
 
   if (isLoading && authStatus === 'checking') {
     return (
@@ -225,8 +200,8 @@ export default function AuthScreen() {
           <Text style={styles.subtitle}>
             {authStatus === 'telegram' 
               ? 'Вход через Telegram'
-              : authStatus === 'fallback'
-              ? 'Демо режим'
+              : authStatus === 'not-telegram'
+              ? 'Откройте в Telegram'
               : 'Ошибка авторизации'
             }
           </Text>
@@ -258,22 +233,15 @@ export default function AuthScreen() {
           </View>
         )}
 
-        {authStatus === 'fallback' && (
+        {authStatus === 'not-telegram' && (
           <View style={styles.fallbackAuth}>
             <View style={styles.infoContainer}>
               <AlertCircle size={24} color="#666666" />
               <Text style={styles.infoTitle}>Приложение запущено вне Telegram</Text>
               <Text style={styles.infoText}>
-                Для полного функционала откройте приложение в Telegram Mini Apps
+                Откройте приложение внутри Telegram Mini Apps, чтобы войти.
               </Text>
             </View>
-            
-            <TouchableOpacity 
-              style={styles.demoButton}
-              onPress={handleFallbackAuth}
-            >
-              <Text style={styles.demoButtonText}>Войти в демо режиме</Text>
-            </TouchableOpacity>
           </View>
         )}
 
@@ -290,7 +258,7 @@ export default function AuthScreen() {
                 setIsLoading(true);
                 // Перезапускаем инициализацию
                 setTimeout(() => {
-                  setAuthStatus('fallback');
+                  setAuthStatus('not-telegram');
                   setIsLoading(false);
                 }, 1000);
               }}

@@ -78,36 +78,9 @@ export const [AppProviderInternal, useAppInternal] = createContextHook(() => {
         if (storedUsers) {
           const parsedUsers = JSON.parse(storedUsers);
           setUsers(parsedUsers);
-          
-          // Создаем только админа если его нет
-          const adminExists = parsedUsers.find((u: User) => u.email === 'admin@demo.com');
-          
-          if (!adminExists) {
-            const adminUser: User = {
-              id: 'admin-demo',
-              name: 'Администратор',
-              email: 'admin@demo.com',
-              isAdmin: true,
-              isModerator: true,
-              registeredAt: Date.now(),
-            };
-            
-            const updatedUsers = [...parsedUsers, adminUser];
-            setUsers(updatedUsers);
-            await AsyncStorage.setItem('all_users', JSON.stringify(updatedUsers));
-          }
         } else {
-          // Создаем только админа
-          const adminUser: User = {
-            id: 'admin-demo',
-            name: 'Администратор',
-            email: 'admin@demo.com',
-            isAdmin: true,
-            isModerator: true,
-            registeredAt: Date.now(),
-          };
-          setUsers([adminUser]);
-          await AsyncStorage.setItem('all_users', JSON.stringify([adminUser]));
+          setUsers([]);
+          await AsyncStorage.setItem('all_users', JSON.stringify([]));
         }
         
         if (storedUser) {
@@ -684,16 +657,6 @@ ${description ? `Описание от пользователя: "${description}
 
   const loginUser = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
-      // Демо админ
-      if (email === 'admin@demo.com' && password === '123456') {
-        const adminUser = users.find(u => u.email === 'admin@demo.com');
-        if (adminUser) {
-          setCurrentUser(adminUser);
-          await AsyncStorage.setItem('current_user', JSON.stringify(adminUser));
-          return true;
-        }
-      }
-
       // Обычные пользователи
       const user = users.find(u => u.email === email);
       if (!user) {
@@ -722,6 +685,7 @@ ${description ? `Описание от пользователя: "${description}
       let existingUser = users.find(u => u.telegramId === telegramData.telegramId);
       
       if (existingUser) {
+        const isAdminLike = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
         // Обновляем данные существующего пользователя
         const updatedUser: User = {
           ...existingUser,
@@ -732,6 +696,8 @@ ${description ? `Описание от пользователя: "${description}
           isPremium: telegramData.isPremium,
           photoUrl: telegramData.photoUrl,
           name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
+          isAdmin: existingUser.isAdmin || isAdminLike,
+          isModerator: existingUser.isModerator || isAdminLike,
         };
         
         // Обновляем в массиве пользователей
@@ -748,6 +714,7 @@ ${description ? `Описание от пользователя: "${description}
         return true;
       } else {
         // Создаем нового пользователя
+        const isAdminLike = (telegramData.username ?? '').toLowerCase() === 'herlabsn';
         const newUser: User = {
           id: `tg_${telegramData.telegramId}`,
           name: `${telegramData.firstName} ${telegramData.lastName || ''}`.trim(),
@@ -758,8 +725,8 @@ ${description ? `Описание от пользователя: "${description}
           languageCode: telegramData.languageCode,
           isPremium: telegramData.isPremium,
           photoUrl: telegramData.photoUrl,
-          isAdmin: false,
-          isModerator: false,
+          isAdmin: isAdminLike,
+          isModerator: isAdminLike,
           registeredAt: Date.now(),
         };
         
