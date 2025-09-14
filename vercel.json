@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm i && npx expo export --platform web",
+  "buildCommand": "bun install && bun run build",
   "outputDirectory": "dist",
   "functions": {
     "api/**/*.{js,ts}": {
